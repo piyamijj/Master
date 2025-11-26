@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bilgilendirme Asistanı</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #chat-container { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 15px; border-radius: 8px; }
+        #output { min-height: 100px; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; overflow-y: auto; background-color: #f9f9f9; }
+        #input { width: calc(100% - 80px); padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <h1>Gemini Bilgilendirme Asistanı</h1>
+        <div id="output">
+            Merhaba! Size nasıl yardımcı olabilirim?
+        </div>
+        <input type="text" id="input" placeholder="Sorunuzu buraya yazın...">
+        <button id="send-button">Gönder</button>
+    </div>
+
+    <script>
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+        document.getElementById('input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const userInput = document.getElementById('input').value;
+            if (!userInput.trim()) return;
+
+            document.getElementById('output').innerHTML += `<p><strong>Siz:</strong> ${userInput}</p>`;
+            document.getElementById('input').value = '';
+
+            try {
+                // Backend API'nizin endpoint'ine istek gönderin
+                // Örnek: Eğer Vercel'de /api/gemini adında bir serverless fonksiyonunuz varsa
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: userInput })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('output').innerHTML += `<p><strong>Asistan:</strong> ${data.response}</p>`;
+            } catch (error) {
+                console.error('API isteği sırasında bir hata oluştu:', error);
+                document.getElementById('output').innerHTML += `<p><strong>Asistan (Hata):</strong> Üzgünüm, şu an yanıt veremiyorum. Lütfen daha sonra tekrar deneyin.</p>`;
+            } finally {
+                document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight; // Scroll to bottom
+            }
+        }
+    </script>
+</body>
+</html>

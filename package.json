@@ -1,0 +1,15 @@
+{
+  "name": "my-gemini-assistant",
+  "version": "1.0.0",
+  "description": "A simple Gemini AI assistant",
+  "main": "api/gemini.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.1.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
