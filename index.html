@@ -3,24 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Model Listesi Kontrolü</title>
+    <title>Gemini Soru-Cevap Asistanı</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        h1 { color: #0056b3; }
-        #output { background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        ul { list-style-type: none; padding: 0; }
-        li { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        strong { color: #007bff; }
-        .error { color: red; font-weight: bold; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        #chat-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 100%;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        #output {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            min-height: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #fdfdfd;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 85%;
+        }
+        .user-message {
+            background-color: #e6f7ff;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .assistant-message {
+            background-color: #f0f0f0;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+        .message strong {
+            color: #0056b3;
+        }
+        #input-area {
+            display: flex;
+            gap: 10px;
+        }
+        #input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading-indicator {
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <h1>Gemini API Model Listesi Kontrolü</h1>
-    <p>Bu sayfa, Gemini API'nizin projenizde hangi modelleri ve metotları desteklediğini gösterecektir.</p>
-    <p>Lütfen bekleyin...</p>
-    <div id="output"></div>
+    <div id="chat-container">
+        <h1>Gemini Soru-Cevap Asistanı</h1>
+        <div id="output">
+            <div class="message assistant-message">
+                <strong>Asistan:</strong> Merhaba! Size nasıl yardımcı olabilirim?
+            </div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="input" placeholder="Sorunuzu buraya yazın...">
+            <button id="send-button">Gönder</button>
+        </div>
+        <div id="loading" class="loading-indicator" style="display: none;">
+            Asistan düşünüyor...
+        </div>
+    </div>
 
-    <!-- Gemini JS dosyasını burada çağırıyoruz -->
-    <script type="module" src="./gemini.js"></script>
+    <script>
+        const outputDiv = document.getElementById('output');
+        const inputField = document.getElementById('input');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading');
+
+        sendButton.addEventListener('click', sendMessage);
+        inputField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const userInput = inputField.value.trim();
+            if (!userInput) return;
+
+            // Kullanıcı mesajını göster
+            outputDiv.innerHTML += `<div class="message user-message"><strong>Siz:</strong> ${userInput}</div>`;
+            inputField.value = ''; // Giriş alanını temizle
+            outputDiv.scrollTop = outputDiv.scrollHeight; // En alta kaydır
+
+            loadingIndicator.style.display = 'block'; // Yükleniyor göstergesini göster
+            sendButton.disabled = true; // Gönder butonunu devre dışı bırak
+            inputField.disabled = true; // Giriş alanını devre dışı bırak
+
+            try {
+                // Backend API'nizin endpoint'ine istek gönderin
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: userInput })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Bilinmeyen bir hata oluştu.' }));
+                    throw new Error(`API Hatası: ${response.status} - ${errorData.message || response.statusText}`);
+                }
+
+                const data = await response.json();
+                outputDiv.innerHTML += `<div class="message assistant-message"><strong>Asistan:</strong> ${data.response}</div>`;
+
+            } catch (error) {
+                console.error('API isteği sırasında bir hata oluştu:', error);
+                outputDiv.innerHTML += `<div class="message assistant-message" style="color: red;"><strong>Asistan (Hata):</strong> Üzgünüm, şu an yanıt veremiyorum. Lütfen daha sonra tekrar deneyin. (Detay: ${error.message || 'Bilinmeyen Hata'})</div>`;
+            } finally {
+                loadingIndicator.style.display = 'none'; // Yükleniyor göstergesini gizle
+                sendButton.disabled = false; // Gönder butonunu etkinleştir
+                inputField.disabled = false; // Giriş alanını etkinleştir
+                inputField.focus(); // Giriş alanına odaklan
+                outputDiv.scrollTop = outputDiv.scrollHeight; // En alta kaydır
+            }
+        }
+    </script>
 </body>
 </html>
