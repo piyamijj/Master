@@ -1,50 +1,43 @@
-// GoogleGenerativeAI kütüphanesini import ediyoruz
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+// api/gemini.js
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Vercel'de tanımladığınız ortam değişkeninden API anahtarını alın
-// Eğer bu bir Vercel ortam değişkeni değilse, API anahtarınızı tırnaklar içine buraya yapıştırın.
-// Örneğin: const API_KEY = "SİZİN_API_ANAHTARINIZ_BURAYA_GELECEK";
-const API_KEY = process.env.GEMINI_API_KEY;
+export default async function handler(request, response) {
+  // Sadece POST isteklerini kabul et
+  if (request.method !== 'POST') {
+    return response.status(405).json({ message: 'Method Not Allowed' });
+  }
 
-// Eğer API_KEY undefined ise, bir hata mesajı gösterelim
-if (!API_KEY) {
-    document.getElementById('output').innerHTML = '<p class="error">Hata: API Anahtarı bulunamadı veya doğru şekilde ayarlanmadı! Lütfen Vercel\'de GEMINI_API_KEY ortam değişkenini ayarladığınızdan emin olun.</p>';
-    console.error("API Anahtarı bulunamadı. Lütfen Vercel'de GEMINI_API_KEY ortam değişkenini ayarlayın.");
-} else {
-    // API anahtarıyla Google Generative AI istemcisini başlatın
-    const genAI = new GoogleGenerativeAI(API_KEY);
+  const { prompt } = request.body;
 
-    async function listAvailableModels() {
-        const outputDiv = document.getElementById('output');
-        outputDiv.innerHTML = '<p>Modeller yükleniyor, lütfen bekleyin...</p>';
+  // Prompt'un boş olup olmadığını kontrol et
+  if (!prompt) {
+    return response.status(400).json({ message: 'Prompt is required.' });
+  }
 
-        try {
-            // API'den mevcut modelleri isteyin
-            const { models } = await genAI.listModels();
+  // API anahtarını ortam değişkenlerinden al
+  const apiKey = process.env.GEMINI_API_KEY;
 
-            if (models.length === 0) {
-                outputDiv.innerHTML = '<p>Projenizde kullanılabilir Gemini modeli bulunamadı. Lütfen Google Cloud Console\'dan Generative Language API\'nin etkinleştirildiğinden emin olun ve doğru bölgede çalıştığınızı kontrol edin.</p>';
-                return;
-            }
+  // API anahtarının mevcut olup olmadığını kontrol et
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY ortam değişkeni ayarlanmamış.');
+    return response.status(500).json({ message: 'Server configuration error: API key is missing.' });
+  }
 
-            let modelListHtml = "<h2>Mevcut Modeller:</h2><ul>";
-            for (const model of models) {
-                modelListHtml += `<li><strong>Model Adı:</strong> ${model.name}<br>`;
-                modelListHtml += `<strong>Desteklenen Metotlar:</strong> ${model.supportedGenerationMethods ? model.supportedGenerationMethods.join(', ') : 'Yok'}<br>`;
-                if (model.inputTokenLimit) modelListHtml += `<strong>Giriş Token Limiti:</strong> ${model.inputTokenLimit}<br>`;
-                if (model.outputTokenLimit) modelListHtml += `<strong>Çıkış Token Limiti:</strong> ${model.outputTokenLimit}</li>`;
-                modelListHtml += '</li>';
-            }
-            modelListHtml += "</ul>";
-            outputDiv.innerHTML = modelListHtml;
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // BURADA DEĞİŞİKLİK YAPILDI: gemini-pro yerine gemini-2.5-flash kullanılıyor
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        } catch (error) {
-            console.error("Modeller listelenirken bir hata oluştu:", error);
-            outputDiv.innerHTML = `<p class="error">Modeller listelenirken bir hata oluştu. Hata detayları: ${error.message}</p>
-                                   <p class="error">Lütfen konsolu (tarayıcı geliştirici araçları) kontrol edin veya API anahtarınızın doğru olduğundan ve Generative Language API'nin projenizde etkinleştirildiğinden emin olun.</p>`;
-        }
-    }
+    const result = await model.generateContent(prompt);
+    const geminiResponse = result.response.text();
 
-    // Sayfa yüklendiğinde model listeleme fonksiyonunu çalıştır
-    listAvailableModels();
+    // Başarılı yanıtı döndür
+    response.status(200).json({ response: geminiResponse });
+
+  } catch (error) {
+    // Hata durumunda konsola logla ve istemciye hata mesajı döndür
+    console.error('Gemini API hatası:', error);
+    // Hata mesajını istemciye daha açıklayıcı bir şekilde gönder
+    response.status(500).json({ message: 'Internal Server Error', error: error.message || 'Bilinmeyen bir hata oluştu.' });
+  }
 }
