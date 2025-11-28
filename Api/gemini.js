@@ -25,8 +25,9 @@ export default async function handler(request, response) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // BURADA DEĞİŞİKLİK YAPILDI: gemini-pro yerine gemini-3-pro kullanılıyor
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro" });
+    // Burada istediğiniz Gemini modelini kullanabilirsiniz.
+    // Örneğin: "gemini-pro", "gemini-2.5-pro", "gemini-2.5-flash"
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const result = await model.generateContent(prompt);
     const geminiResponse = result.response.text();
