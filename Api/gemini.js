@@ -25,8 +25,8 @@ export default async function handler(request, response) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // BURADA DEĞİŞİKLİK YAPILDI: gemini-pro yerine gemini-2.5-flash kullanılıyor
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // BURADA DEĞİŞİKLİK YAPILDI: gemini-pro yerine gemini-3-pro kullanılıyor
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro" });
 
     const result = await model.generateContent(prompt);
     const geminiResponse = result.response.text();
