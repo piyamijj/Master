@@ -1,7 +1,7 @@
 {
-  "name": "my-gemini-assistant",
+  "name": "gemini-qa-assistant",
   "version": "1.0.0",
-  "description": "A simple Gemini AI assistant",
+  "description": "A simple Q&A assistant using Gemini API on Vercel.",
   "main": "api/gemini.js",
   "scripts": {
     "start": "vercel dev"
