@@ -1,0 +1,1 @@
+Adımdayar Nabız Hesap Makinesi
